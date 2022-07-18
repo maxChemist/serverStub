@@ -1,5 +1,7 @@
 const { Connection } = require('../mongo/mongo');
 
+const articlePerPage = 4;
+
 class UserController {
   async get(req, res) {
     try {
@@ -13,21 +15,64 @@ class UserController {
   async db(req, res) {
     try {
       await Connection.connectToMongo();
-      const contentDB = await Connection.db.collection('users_data').find({}).toArray();
+      const contentDB = await Connection.db
+        .collection('users_data')
+        .find({})
+        .toArray();
       return res.json(contentDB);
     } catch (err) {
       console.log('DB error', err);
     }
   }
- 
+
   async brand(req, res) {
     try {
       await Connection.connectToMongo();
-      const brand = req.params.id
-      console.log(brand)
-     
-      const contentDB = await Connection.db.collection('users_data').find({brand:brand, type:{$in:["CarIcon","Article"]}}).sort({'publicationDate':-1}).toArray();
-      return res.json(contentDB);
+      const brand = req.params.id;
+      const page = req.params.page;
+      const query = req.query;
+      // console.log(brand, "page ", page, "query ", query)
+      const requestedPage =
+        query.page && Number(query.page) ? Number(query.page) : 1;
+      console.log(
+        'requestedPage ',
+        requestedPage,
+        ' query.page ',
+        query.page,
+        Number(query.page)
+      );
+      const contentDB = await Connection.db
+        .collection('users_data')
+        .find({ brand: brand, type: { $in: ['CarIcon', 'Article'] } })
+        .sort({ publicationDate: -1 })
+        .skip((requestedPage - 1)*articlePerPage)
+        .limit(articlePerPage)
+        .toArray();
+      const totalRecDB = await Connection.db
+        .collection('users_data')
+        .countDocuments({
+          brand: brand,
+          type: { $in: ['CarIcon', 'Article'] },
+        });
+
+      const totalPage = Math.ceil(totalRecDB / articlePerPage);
+      console.log(
+        brand,
+        'requestedPage ',
+        requestedPage,
+        ' total rec: ',
+        totalRecDB,
+        'articlePerPage ',
+        articlePerPage,
+        'totalPage ',
+        totalPage
+      );
+
+      return res.json({
+        currentPage: requestedPage,
+        totalPage: totalPage,
+        articles:contentDB
+      });
     } catch (err) {
       console.log('DB error', err);
     }
