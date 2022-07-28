@@ -1,5 +1,8 @@
 const { Connection } = require('../mongo/mongo');
 
+const DBarticles = new Connection("articles")
+const DBstructure = new Connection("brands_structure")
+
 const articlePerPage = 4;
 
 class UserController {
@@ -14,8 +17,8 @@ class UserController {
 
   async db(req, res) {
     try {
-      await Connection.connectToMongo();
-      const contentDB = await Connection.db
+      await DBarticles.connectToMongo();
+      const contentDB = await DBarticles.db
         .collection('users_data')
         .find({})
         .toArray();
@@ -27,7 +30,8 @@ class UserController {
 
   async brand(req, res) {
     try {
-      await Connection.connectToMongo();
+      // await Connection.connectToMongo();
+      await DBarticles.connectToMongo();
       const brand = req.params.id;
       const page = req.params.page;
       const query = req.query;
@@ -41,14 +45,14 @@ class UserController {
         query.page,
         Number(query.page)
       );
-      const contentDB = await Connection.db
+      const contentDB = await DBarticles.db
         .collection('users_data')
         .find({ brand: brand, type: { $in: ['CarIcon', 'Article'] } })
         .sort({ publicationDate: -1 })
         .skip((requestedPage - 1)*articlePerPage)
         .limit(articlePerPage)
         .toArray();
-      const totalRecDB = await Connection.db
+      const totalRecDB = await DBarticles.db
         .collection('users_data')
         .countDocuments({
           brand: brand,
@@ -75,6 +79,19 @@ class UserController {
       });
     } catch (err) {
       console.log('DB error', err);
+    }
+  }
+
+  async structure(req, res) {
+    try {
+      // await Connection.connectToMongo();
+      await DBstructure.connectToMongo();
+      const brandCode = req.params.id;
+
+      console.log(brandCode)
+      return res.json({brandCode});
+    } catch (err) {
+      console.log('DB request STRUCTURE error', err);
     }
   }
 }

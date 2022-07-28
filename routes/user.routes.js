@@ -6,4 +6,5 @@ router.get('/',userController.get)
 router.get('/db',userController.db)
 router.get('/brand/:id/:page',userController.brand)
 router.get('/brand/:id',userController.brand)
+router.get('/structure/:id',userController.structure)
 module.exports = router;
