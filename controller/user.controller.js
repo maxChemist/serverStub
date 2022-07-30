@@ -87,9 +87,13 @@ class UserController {
       // await Connection.connectToMongo();
       await DBstructure.connectToMongo();
       const brandCode = req.params.id;
+      
+      const structure = await DBstructure.db
+      .collection('brands')
+      .findOne({ code: brandCode})
 
       console.log(brandCode)
-      return res.json({brandCode});
+      return res.json({structure});
     } catch (err) {
       console.log('DB request STRUCTURE error', err);
     }
