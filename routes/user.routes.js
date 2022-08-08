@@ -10,5 +10,6 @@ router.get('/structure/:id',userController.structure)
 router.get('/getRecomendedArticles',userController.getRecomendedArticles)
 router.get('/logbook/:brand',userController.articles)
 router.get('/logbook/:brand/:id',userController.articles)
+router.get('/article/:id',userController.oneArticle)
 
 module.exports = router;
