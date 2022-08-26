@@ -1,10 +1,15 @@
 const { Connection } = require('../mongo/mongo');
 const ObjectId = require('mongodb').ObjectId;
+const { userData } = require('../userDataStub');
+const { userCommunities } = require('../userCommunities');
+const { recomendedCommunities } = require('../recomendedCommunities');
+const { communityPage } = require('../communityPage');
+const { communityForums } = require('../communityForums');
 
 const DBarticles = new Connection('articles');
 const DBstructure = new Connection('brands_structure');
 
-const articlePerPage = 100;
+const articlePerPage = 4;
 
 class UserController {
   async get(req, res) {
@@ -102,50 +107,50 @@ class UserController {
 
   async getRecomendedArticles(req, res) {
     try {
-      console.log(" getRecomendedArticles req")
+      console.log(' getRecomendedArticles req', req.query);
       const query = req.query;
-      const articlePerPage = 4
+      const { page } = query;
+      const articlePerPage = 4;
       const requestedPage = query.page && Number(page) ? Number(page) : 1;
 
       await DBarticles.connectToMongo();
       const totalRecDB = await DBarticles.db
-      .collection('articles')
-      .countDocuments({});
+        .collection('articles')
+        .countDocuments({});
 
-    const totalPage = Math.ceil(totalRecDB / articlePerPage);
-      // const resArr = [
-      //   { brand: 'alfaromeo', img: 'https://a.d-cd.net/4fcf7f2s-480.jpg' },
-      //   { brand: 'bmw', img: 'https://a.d-cd.net/-lAAAgH_d-A-480.jpg' },
-      //   { brand: 'ford', img: 'https://a.d-cd.net/51a9a8as-480.jpg' },
-      //   { brand: 'hummer', img: 'https://a.d-cd.net/d409e2es-480.jpg' },
-      // ];
+      const totalPage = Math.ceil(totalRecDB / articlePerPage);
 
       const allRecomendedArticle = await DBarticles.db
-      .collection('articles')
-      .find({})
-      .sort({ likes: -1 })
-      .skip((requestedPage - 1) * articlePerPage)
-      .limit(articlePerPage)
-      .toArray();
+        .collection('articles')
+        .find({})
+        .sort({ likes: -1 })
+        .skip((requestedPage - 1) * articlePerPage)
+        .limit(articlePerPage)
+        .toArray();
 
-
-      const responceArr = allRecomendedArticle.map(v=>({
-        id:v._id,
-        likes:v.likes,
-        title:v.title,
-        user:v.user,
+      const responceArr = allRecomendedArticle.map((v) => ({
+        id: v._id,
+        likes: v.likes,
+        title: v.title,
+        user: v.user,
         code: v.code,
         brand: v.brand,
         model: v.model,
-        modelID:v.modelID,
+        modelID: v.modelID,
         generation: v.generation,
         generationID: v.generationID,
-        publicationDate:v.publicationDate,
-        img:v.body.filter(el=>el.img)[0].img,
-        year:v.year
-      }))
+        publicationDate: v.publicationDate,
+        img: v.body.filter((el) => el.img)[0]
+          ? v.body.filter((el) => el.img)[0].img
+          : '',
+        year: v.year,
+      }));
 
-      return res.json(responceArr);
+      return res.json({
+        recomended: responceArr,
+        currentPage: requestedPage,
+        totalPage: totalPage,
+      });
     } catch (err) {
       console.log('DB request STRUCTURE error', err);
     }
@@ -221,8 +226,6 @@ class UserController {
           .sort({ publicationDate: 1 })
           .toArray();
 
-
-
         let currArticleIndex;
         const arr = allUsersArticle.map((v, i) => {
           if (id == v._id) {
@@ -235,34 +238,35 @@ class UserController {
           };
         });
 
-        const preIndex = currArticleIndex>0? currArticleIndex-1:-1
-        const nextIndex = currArticleIndex<arr.length-1? currArticleIndex+1:-1
-        
-        if(preIndex>=0){
-          prevArticle = {id:arr[preIndex]._id, title:arr[preIndex].title}
-        }else{
-          prevArticle=false
+        const preIndex = currArticleIndex > 0 ? currArticleIndex - 1 : -1;
+        const nextIndex =
+          currArticleIndex < arr.length - 1 ? currArticleIndex + 1 : -1;
+
+        if (preIndex >= 0) {
+          prevArticle = { id: arr[preIndex]._id, title: arr[preIndex].title };
+        } else {
+          prevArticle = false;
         }
 
-        if(nextIndex>=0){
-          nextArticle = {id:arr[nextIndex]._id, title:arr[nextIndex].title}
-        }else{
-          nextArticle=false
+        if (nextIndex >= 0) {
+          nextArticle = { id: arr[nextIndex]._id, title: arr[nextIndex].title };
+        } else {
+          nextArticle = false;
         }
 
-        console.log('currArticleIndex ', currArticleIndex)
-        console.log('preIndex ', preIndex)
-        console.log('nextIndex ', nextIndex)
+        console.log('currArticleIndex ', currArticleIndex);
+        console.log('preIndex ', preIndex);
+        console.log('nextIndex ', nextIndex);
       }
 
       return res.json({
         article: Object.assign(
           { currentCarsInfo },
           { exCarsInfo },
-          {prevArticle},
-          {nextArticle},
-           userData,
-           contentDB,
+          { prevArticle },
+          { nextArticle },
+          userData,
+          contentDB
         ),
       });
     } catch (err) {
@@ -306,7 +310,7 @@ class UserController {
 
       const totalPage = Math.ceil(totalRecDB / articlePerPage);
 
-      console.log(brand, 'id= ',id, query, requestedPage, searchObj);
+      console.log(brand, 'id= ', id, query, requestedPage, searchObj);
       console.log(
         brand,
         'requestedPage ',
@@ -326,6 +330,162 @@ class UserController {
       });
     } catch (err) {
       console.log(' articles error', err);
+    }
+  }
+
+  async createComments(req, res) {
+    try {
+      const text = req.body.text;
+      console.log('createComments', req.body);
+      await DBarticles.connectToMongo();
+      const recDB = await DBarticles.db.collection('comments').insertOne({
+        user: 'someUser',
+        comment: text,
+        commentDate: Date.parse(new Date()),
+        likes: 0,
+      });
+      console.log(recDB);
+      return res.json({ message: recDB });
+    } catch (err) {
+      console.log(' createComments ', err);
+    }
+  }
+
+  async createAnswer(req, res) {
+    try {
+      const text = req.body.text;
+      const id = new ObjectId(req.body.commentId);
+      console.log('createComments', req.body);
+      await DBarticles.connectToMongo();
+      const recDB = await DBarticles.db.collection('comments').findOne({
+        _id: id,
+      });
+
+      let answers = recDB.answers ? recDB.answers : [];
+      const answObj = [
+        {
+          user: 'someUser',
+          answer: text,
+          answerDate: Date.parse(new Date()),
+          likes: 0,
+        },
+      ];
+
+      const newAnswers = answObj.concat(answers);
+      console.log(newAnswers);
+
+      const updateDB = await DBarticles.db
+        .collection('comments')
+        .updateOne({ _id: id }, { $set: { answers: newAnswers } });
+
+      return res.json({ message: updateDB });
+    } catch (err) {
+      console.log(' createAnswer ', err);
+    }
+  }
+
+  async getComments(req, res) {
+    try {
+      console.log('getComments', req.body);
+      await DBarticles.connectToMongo();
+      const commentsDB = await DBarticles.db
+        .collection('comments')
+        .find({})
+        .sort({ commentDate: -1 })
+        .toArray();
+      return res.json({ comments: commentsDB });
+    } catch (err) {
+      console.log(' createComments ', err);
+    }
+  }
+
+  async getUser(req, res) {
+    try {
+      const userId = req.params.id;
+      console.log('getUser ', userId);
+      return res.json(userData);
+    } catch (err) {
+      console.log(' getUser ', err);
+    }
+  }
+
+  async getUserCommunities(req, res) {
+    try {
+      console.log('getUserCommunities ');
+      return res.json({ userCommunities: userCommunities });
+    } catch (err) {
+      console.log(' getUserCommunities ', err);
+    }
+  }
+
+  async getRecomendedCommunities(req, res) {
+    try {
+      console.log('getRecomendedCommunities ');
+      return res.json({ recomendedCommunities: recomendedCommunities });
+    } catch (err) {
+      console.log(' getRecomendedCommunities ', err);
+    }
+  }
+
+  async getNewCommunities(req, res) {
+    try {
+      console.log('getNewCommunities ');
+      return res.json({ newCommunities: recomendedCommunities });
+    } catch (err) {
+      console.log(' getNewCommunities ', err);
+    }
+  }
+
+  async getCommunityPage(req, res) {
+    try {
+      console.log('getCommunityPage ');
+      return res.json({ communityPage });
+    } catch (err) {
+      console.log(' getCommunityPage ', err);
+    }
+  }
+
+  async getCommunityBlogs(req, res) {
+    try {
+      console.log('getCommunityBlogs ');
+
+      await DBarticles.connectToMongo();
+      const communityBlogs = await DBarticles.db
+        .collection('articles')
+        .find({})
+        .limit(9)
+        .toArray();
+
+      const responceArr = communityBlogs.map((v) => ({
+        id: v._id,
+        likes: v.likes,
+        title: v.title,
+        user: v.user,
+        code: v.code,
+        brand: v.brand,
+        model: v.model,
+        modelID: v.modelID,
+        generation: v.generation,
+        generationID: v.generationID,
+        publicationDate: v.publicationDate,
+        img: v.body.filter((el) => el.img)[0]
+          ? v.body.filter((el) => el.img)[0].img
+          : '',
+        year: v.year,
+      }));
+
+      return res.json({ communityBlogs: responceArr});
+    } catch (err) {
+      console.log(' getCommunityPage ', err);
+    }
+  }
+
+  async getCommunityForums(req, res) {
+    try {
+      console.log('getCommunityForums ');
+      return res.json({ communityForums });
+    } catch (err) {
+      console.log(' getCommunityForums ', err);
     }
   }
 }
