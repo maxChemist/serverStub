@@ -21,5 +21,8 @@ router.get('/getNewCommunities',userController.getNewCommunities)
 router.get('/getCommunityPage/:id',userController.getCommunityPage)
 router.get('/getCommunityBlogs/:id',userController.getCommunityBlogs)
 router.get('/getCommunityForums/:id',userController.getCommunityForums)
+router.get('/getCommunityMembers/:id',userController.getCommunityMembers)
+router.post('/sendArticle',userController.sendArticle)
+router.get('/getText',userController.getText)
 
 module.exports = router;

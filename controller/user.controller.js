@@ -5,7 +5,9 @@ const { userCommunities } = require('../userCommunities');
 const { recomendedCommunities } = require('../recomendedCommunities');
 const { communityPage } = require('../communityPage');
 const { communityForums } = require('../communityForums');
+const fs = require ('fs')
 
+let articleObject = {}
 const DBarticles = new Connection('articles');
 const DBstructure = new Connection('brands_structure');
 
@@ -461,6 +463,7 @@ class UserController {
         likes: v.likes,
         title: v.title,
         user: v.user,
+        author: v.user,
         code: v.code,
         brand: v.brand,
         model: v.model,
@@ -472,9 +475,10 @@ class UserController {
           ? v.body.filter((el) => el.img)[0].img
           : '',
         year: v.year,
+        briefText:'ed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. ed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.'
       }));
 
-      return res.json({ communityBlogs: responceArr});
+      return res.json({ communityBlogs: responceArr });
     } catch (err) {
       console.log(' getCommunityPage ', err);
     }
@@ -486,6 +490,46 @@ class UserController {
       return res.json({ communityForums });
     } catch (err) {
       console.log(' getCommunityForums ', err);
+    }
+  }
+
+  async getCommunityMembers(req, res) {
+    try {
+      console.log('getCommunityMembers ', req.params, req.query);
+      let membersArr = [];
+      // form memders list
+      const items = req.query.list==='false' ? 10 : 100;
+
+      membersArr = Array(items).fill({
+        avatar: 'https://a.d-cd.net/NLFsC38LzwSoup4BBSc3Wl_QLew-100.jpg',
+        userId: '111',
+      });
+
+      return res.json({ communityMembers: membersArr });
+    } catch (err) {
+      console.log(' getCommunityMembers ', err);
+    }
+  }
+
+  async sendArticle(req, res) {
+    try {
+      articleObject = req.body.articleObj
+      console.log('sendArticle ', articleObject.body);
+      // fs.writeFileSync('./someText.json',JSON.stringify(articleObject))
+
+      return res.json({ message: "get article" });
+    } catch (err) {
+      console.log(' sendArticle ', err);
+    }
+  }
+
+  async getText(req, res) {
+    try {
+      console.log('getText ');
+      const rec = JSON.parse(fs.readFileSync('./someText.json', {encoding:'utf8', flag:'r'}))
+      return res.json(rec);
+    } catch (err) {
+      console.log(' getText ', err);
     }
   }
 }
