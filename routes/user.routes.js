@@ -24,5 +24,6 @@ router.get('/getCommunityForums/:id',userController.getCommunityForums)
 router.get('/getCommunityMembers/:id',userController.getCommunityMembers)
 router.post('/sendArticle',userController.sendArticle)
 router.get('/getText',userController.getText)
+router.get('/getAdvertising',userController.getAdvertising)
 
 module.exports = router;

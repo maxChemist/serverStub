@@ -5,9 +5,11 @@ const { userCommunities } = require('../userCommunities');
 const { recomendedCommunities } = require('../recomendedCommunities');
 const { communityPage } = require('../communityPage');
 const { communityForums } = require('../communityForums');
-const fs = require ('fs')
+const fs = require('fs');
 
-let articleObject = {}
+const articlesCollection = 'articles_standard_form_img_drive';
+
+let articleObject = {};
 const DBarticles = new Connection('articles');
 const DBstructure = new Connection('brands_structure');
 
@@ -117,13 +119,13 @@ class UserController {
 
       await DBarticles.connectToMongo();
       const totalRecDB = await DBarticles.db
-        .collection('articles')
+        .collection(articlesCollection)
         .countDocuments({});
 
       const totalPage = Math.ceil(totalRecDB / articlePerPage);
 
       const allRecomendedArticle = await DBarticles.db
-        .collection('articles')
+        .collection(articlesCollection)
         .find({})
         .sort({ likes: -1 })
         .skip((requestedPage - 1) * articlePerPage)
@@ -142,8 +144,8 @@ class UserController {
         generation: v.generation,
         generationID: v.generationID,
         publicationDate: v.publicationDate,
-        img: v.body.filter((el) => el.img)[0]
-          ? v.body.filter((el) => el.img)[0].img
+        image: v.body.filter((el) => el.image)[0]
+          ? v.body.filter((el) => el.image)[0].image
           : '',
         year: v.year,
       }));
@@ -171,7 +173,7 @@ class UserController {
 
       await DBarticles.connectToMongo();
       const contentDB = await DBarticles.db
-        .collection('articles')
+        .collection(articlesCollection)
         .findOne({ _id: o_id });
 
       if (contentDB) {
@@ -223,7 +225,7 @@ class UserController {
           about: 0,
         };
         const allUsersArticle = await DBarticles.db
-          .collection('articles')
+          .collection(articlesCollection)
           .find({ user: contentDB.user }, { showedFields })
           .sort({ publicationDate: 1 })
           .toArray();
@@ -299,7 +301,7 @@ class UserController {
       //---request DB---------------------------
       await DBarticles.connectToMongo();
       const contentDB = await DBarticles.db
-        .collection('articles')
+        .collection(articlesCollection)
         .find(searchObj)
         .sort({ publicationDate: -1 })
         .skip((requestedPage - 1) * articlePerPage)
@@ -307,7 +309,7 @@ class UserController {
         .toArray();
 
       const totalRecDB = await DBarticles.db
-        .collection('articles')
+        .collection(articlesCollection)
         .countDocuments(searchObj);
 
       const totalPage = Math.ceil(totalRecDB / articlePerPage);
@@ -453,7 +455,7 @@ class UserController {
 
       await DBarticles.connectToMongo();
       const communityBlogs = await DBarticles.db
-        .collection('articles')
+        .collection(articlesCollection)
         .find({})
         .limit(9)
         .toArray();
@@ -471,11 +473,12 @@ class UserController {
         generation: v.generation,
         generationID: v.generationID,
         publicationDate: v.publicationDate,
-        img: v.body.filter((el) => el.img)[0]
-          ? v.body.filter((el) => el.img)[0].img
+        image: v.body.filter((el) => el.image)[0]
+          ? v.body.filter((el) => el.image)[0].image
           : '',
         year: v.year,
-        briefText:'ed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. ed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.'
+        briefText:
+          'ed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. ed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.',
       }));
 
       return res.json({ communityBlogs: responceArr });
@@ -498,7 +501,7 @@ class UserController {
       console.log('getCommunityMembers ', req.params, req.query);
       let membersArr = [];
       // form memders list
-      const items = req.query.list==='false' ? 10 : 100;
+      const items = req.query.list === 'false' ? 10 : 100;
 
       membersArr = Array(items).fill({
         avatar: 'https://a.d-cd.net/NLFsC38LzwSoup4BBSc3Wl_QLew-100.jpg',
@@ -513,11 +516,11 @@ class UserController {
 
   async sendArticle(req, res) {
     try {
-      articleObject = req.body.articleObj
+      articleObject = req.body.articleObj;
       console.log('sendArticle ', articleObject.body);
-      // fs.writeFileSync('./someText.json',JSON.stringify(articleObject))
+      fs.writeFileSync('./someText.json',JSON.stringify(articleObject))
 
-      return res.json({ message: "get article" });
+      return res.json({ message: 'get article' });
     } catch (err) {
       console.log(' sendArticle ', err);
     }
@@ -526,8 +529,42 @@ class UserController {
   async getText(req, res) {
     try {
       console.log('getText ');
-      const rec = JSON.parse(fs.readFileSync('./someText.json', {encoding:'utf8', flag:'r'}))
+      const rec = JSON.parse(
+        fs.readFileSync('./someText.json', { encoding: 'utf8', flag: 'r' })
+      );
       return res.json(rec);
+    } catch (err) {
+      console.log(' getText ', err);
+    }
+  }
+
+  async getAdvertising(req, res) {
+    try {
+      console.log('getAdvertising ');
+      return res.json({
+        advertisingArr: [
+          {
+            itemName: 'Салонний фільтр',
+            itemCode: 'CA1114',
+            itemDescription: 'SAKURA',
+          },
+          {
+            itemName: 'Масляний фільтр',
+            itemCode: 'CA1114',
+            itemDescription: 'SAKURA',
+          },
+          {
+            itemName: 'Повітряний фільтр',
+            itemCode: 'CA1114',
+            itemDescription: 'SAKURA',
+          },
+          {
+            itemName: 'Паливний фільтр',
+            itemCode: 'CA1114',
+            itemDescription: 'SAKURA',
+          },
+        ],
+      });
     } catch (err) {
       console.log(' getText ', err);
     }

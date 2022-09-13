@@ -18,13 +18,13 @@ const userData = {
   userAlbum: [
     {
       carGen: 'Lexus GX Crystal White Pearl',
-      ref: 'https://www.drive2.ru/r/lexus/gx/619428293401120096/',
+      id: 11178,
       img: 'https://a.d-cd.net/QAAAAgNSuuA-480.jpg',
       photoAmount: '10',
     },
     {
       carGen: 'Acura CL (1G)',
-      ref: 'https://www.drive2.ru/r/lexus/gx/619428293401120096/',
+      id: '11179',
       img: 'https://a.d-cd.net/4494c95s-480.jpg',
       photoAmount: '10',
     },
@@ -104,12 +104,12 @@ const userData = {
     {
       name: 'Зроби сам',
       img: 'https://a.d-cd.net/jkAAAgAD_2A-200.jpg',
-      ref: 'community',
+      id: 11101,
     },
     {
       name: 'All Oldschool',
       img: 'https://a.d-cd.net/726cea2s-200.jpg',
-      ref: 'community',
+      id: '11102',
     },
   ],
 };
