@@ -1,11 +1,14 @@
 const { Connection } = require('../mongo/mongo');
 const ObjectId = require('mongodb').ObjectId;
+const {getLastCommentsForEachArticles} = require('../functions/getLastCommentsForEachArticles')
 const { userData } = require('../userDataStub');
 const { userCommunities } = require('../userCommunities');
 const { recomendedCommunities } = require('../recomendedCommunities');
 const { communityPage } = require('../communityPage');
 const { communityForums } = require('../communityForums');
+
 const fs = require('fs');
+const req = require('express/lib/request');
 
 const articlesCollection = 'articles_standard_form_img_drive';
 
@@ -327,10 +330,12 @@ class UserController {
         totalPage
       );
 
+      const articles  = await getLastCommentsForEachArticles(contentDB)
+
       return res.json({
         currentPage: requestedPage,
         totalPage: totalPage,
-        articles: contentDB,
+        articles: articles,
       });
     } catch (err) {
       console.log(' articles error', err);
