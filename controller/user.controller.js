@@ -1,6 +1,11 @@
 const { Connection } = require('../mongo/mongo');
 const ObjectId = require('mongodb').ObjectId;
-const {getLastCommentsForEachArticles} = require('../functions/getLastCommentsForEachArticles')
+const {
+  getLastCommentsForEachArticles,
+} = require('../functions/getLastCommentsForEachArticles');
+const {
+  getSubscribeInfoForEachArticles,
+} = require('../functions/getSubscribeInfoForEachArticles');
 const { userData } = require('../userDataStub');
 const { userCommunities } = require('../userCommunities');
 const { recomendedCommunities } = require('../recomendedCommunities');
@@ -330,12 +335,19 @@ class UserController {
         totalPage
       );
 
-      const articles  = await getLastCommentsForEachArticles(contentDB)
-
+      const articlesWithComments = await getLastCommentsForEachArticles(
+        contentDB
+      );
+      let articlesSubscribe;
+        articlesSubscribe = await getSubscribeInfoForEachArticles(
+          articlesWithComments,
+          req.headers.authorization
+        );
+      
       return res.json({
         currentPage: requestedPage,
         totalPage: totalPage,
-        articles: articles,
+        articles: articlesSubscribe,
       });
     } catch (err) {
       console.log(' articles error', err);
@@ -523,7 +535,7 @@ class UserController {
     try {
       articleObject = req.body.articleObj;
       console.log('sendArticle ', articleObject.body);
-      fs.writeFileSync('./someText.json',JSON.stringify(articleObject))
+      fs.writeFileSync('./someText.json', JSON.stringify(articleObject));
 
       return res.json({ message: 'get article' });
     } catch (err) {
@@ -572,6 +584,29 @@ class UserController {
       });
     } catch (err) {
       console.log(' getText ', err);
+    }
+  }
+
+  async subscribe(req, res) {
+    try {
+      const aim = req.params.aim;
+      const aimId = req.query.id;
+      console.log(aim, aimId);
+
+      await DBarticles.connectToMongo();
+      const contentDB = await DBarticles.db
+        .collection('subscribes')
+        .findOne({ types: aim, id: aimId });
+
+      if (!contentDB) {
+        await DBarticles.db
+          .collection('subscribes')
+          .insertOne({ types: aim, id: aimId });
+      }
+
+      return res.json({ message: 'ok' });
+    } catch (err) {
+      console.log(' subscribe ', err);
     }
   }
 }
