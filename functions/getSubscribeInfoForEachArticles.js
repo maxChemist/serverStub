@@ -10,16 +10,16 @@ async function getSubscribeInfoForEachArticles(articlesArr, authorization) {
     let alreadySubscribe = false;
 
     let subscribeInfo = false;
-    if (authorization) {
+    if (authorization && authorization !== 'false') {
       subscribeInfo = await DBarticles.db
         .collection('subscribes')
-        .findOne({ type: userCommunities, id: element.user });
+        .findOne({ type: 'user', id: element.user });
     }
-    console.log('subscribeInfo ', subscribeInfo)
+
     if (subscribeInfo) {
     alreadySubscribe = true;
     }
-    const newElement = { ...element, subscribe: [alreadySubscribe] };
+    const newElement = { ...element, subscribe: alreadySubscribe };
     articlesWithSubscribe.push(newElement);
   }
 

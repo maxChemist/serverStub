@@ -15,13 +15,13 @@ const { communityForums } = require('../communityForums');
 const fs = require('fs');
 const req = require('express/lib/request');
 
-const articlesCollection = 'articles_standard_form_img_drive';
+const articlesCollection = 'articles_updated_30_09_2022';
 
 let articleObject = {};
 const DBarticles = new Connection('articles');
 const DBstructure = new Connection('brands_structure');
 
-const articlePerPage = 4;
+const articlePerPage = 5;
 
 class UserController {
   async get(req, res) {
@@ -213,28 +213,10 @@ class UserController {
         }
 
         //-- find prev article and next rticle---
-        const showedFields = {
-          code: 0,
-          brand: 0,
-          model: 0,
-          modelID: 0,
-          generation: 0,
-          generationID: 0,
-          year: 0,
-          user: 0,
-          avatar: 0,
-          author: 0,
-          sourceUrl: 0,
-          publicationDate: 1,
-          type: 0,
-          title: 1,
-          body: 0,
-          likes: 0,
-          about: 0,
-        };
+
         const allUsersArticle = await DBarticles.db
           .collection(articlesCollection)
-          .find({ user: contentDB.user }, { showedFields })
+          .find({ user: contentDB.user })
           .sort({ publicationDate: 1 })
           .toArray();
 
@@ -270,22 +252,29 @@ class UserController {
         console.log('preIndex ', preIndex);
         console.log('nextIndex ', nextIndex);
       }
+      const article = Object.assign(
+        { currentCarsInfo },
+        { exCarsInfo },
+        { prevArticle },
+        { nextArticle },
+        userData,
+        contentDB
+      );
+
+      const articleWithSubscribe = await getSubscribeInfoForEachArticles(
+        [article],
+        req.headers.authorization
+      );
 
       return res.json({
-        article: Object.assign(
-          { currentCarsInfo },
-          { exCarsInfo },
-          { prevArticle },
-          { nextArticle },
-          userData,
-          contentDB
-        ),
+        article: articleWithSubscribe[0],
       });
     } catch (err) {
       console.log(' oneArticle ', err);
     }
   }
 
+  // ****************************************************************
   async articles(req, res) {
     try {
       const brand = req.params.brand;
@@ -339,11 +328,11 @@ class UserController {
         contentDB
       );
       let articlesSubscribe;
-        articlesSubscribe = await getSubscribeInfoForEachArticles(
-          articlesWithComments,
-          req.headers.authorization
-        );
-      
+      articlesSubscribe = await getSubscribeInfoForEachArticles(
+        articlesWithComments,
+        req.headers.authorization
+      );
+
       return res.json({
         currentPage: requestedPage,
         totalPage: totalPage,
@@ -433,7 +422,7 @@ class UserController {
   async getUserCommunities(req, res) {
     try {
       console.log('getUserCommunities ');
-      return res.json({ userCommunities: userCommunities });
+      return res.json({ userCommunities: recomendedCommunities });
     } catch (err) {
       console.log(' getUserCommunities ', err);
     }
@@ -533,11 +522,56 @@ class UserController {
 
   async sendArticle(req, res) {
     try {
-      articleObject = req.body.articleObj;
-      console.log('sendArticle ', articleObject.body);
-      fs.writeFileSync('./someText.json', JSON.stringify(articleObject));
 
-      return res.json({ message: 'get article' });
+      const {
+        title,
+        body,
+        commentsAccess,
+        articleAccess,
+        mileageUnit,
+        currencyUnit,
+        mileageValue,
+        currencyValue,
+      } = req.body
+
+      const recObj = {
+        code: 'ac',
+        brand: 'AC Cobra',
+        model: 'AC Cobra',
+        modelID: 'm0',
+        generation: 'Cobra (1962)',
+        generationID: 'g0',
+        year: 1962,
+        publicationDate: Date.parse(new Date()),
+        user:'zikospider',
+        author: "ZikoSpider",
+        avatar: 'https://a.d-cd.net/8d89a0as-100.jpg',
+        type: 'Article',
+        title: title,
+        body: body,
+        mileage:{
+          value:mileageValue,
+          units:mileageUnit,
+        },
+        price: {
+          value: currencyValue,
+          currency: currencyUnit
+        },
+        likes:0,
+        comments:0,
+        commentsAccess,
+        articleAccess,
+        about: [0,1]
+      }
+
+      await DBarticles.connectToMongo();
+
+      const record = await DBarticles.db
+      .collection(articlesCollection)
+      .insertOne(recObj)
+      
+
+      return res.json({ message: record });
     } catch (err) {
       console.log(' sendArticle ', err);
     }
@@ -596,17 +630,141 @@ class UserController {
       await DBarticles.connectToMongo();
       const contentDB = await DBarticles.db
         .collection('subscribes')
-        .findOne({ types: aim, id: aimId });
+        .findOne({ type: aim, id: aimId });
 
       if (!contentDB) {
-        await DBarticles.db
+        const rec = await DBarticles.db
           .collection('subscribes')
-          .insertOne({ types: aim, id: aimId });
+          .insertOne({ type: aim, id: aimId });
+        console.log('insert ', rec, aim, ' ', aimId);
+        return res.json({
+          status: { ok: true },
+          process: 'insert',
+          type: aim,
+          id: aimId,
+        });
+      } else {
+        const delRec = await DBarticles.db
+          .collection('subscribes')
+          .deleteOne({ type: aim, id: aimId });
+        if (delRec && delRec.deletedCount >= 0) {
+          console.log('deleteOne', aim, ' ', aimId);
+          return res.json({
+            status: { ok: true },
+            process: 'del',
+            type: aim,
+            id: aimId,
+          });
+        }
       }
 
-      return res.json({ message: 'ok' });
+      return res.json({ status: { ok: false } });
     } catch (err) {
       console.log(' subscribe ', err);
+    }
+  }
+
+  async logBooksLine(req, res) {
+    try {
+      const { brand, model, generation } = req.params;
+      if (!brand) return res.json({ message: 'no params!' });
+      const { sort, page, total } = req.query;
+      const requestedPage = Number(page) ? Number(page) : 1;
+      console.log('requestedPage ', requestedPage);
+
+      const sortParams = () => {
+        if (!sort || sort === 'likes') return { likes: -1 };
+        if (sort === 'comments') return { comments: -1 };
+        if (sort === 'date') return { publicationDate: -1 };
+      };
+
+      const searchParams = () => {
+        if (generation) return { generationID: generation };
+        if (model) return { modelID: model };
+        if (brand) return { code: brand };
+      };
+      await DBarticles.connectToMongo();
+
+      const totalRecDB = await DBarticles.db
+      .collection(articlesCollection)
+      .countDocuments(searchParams());
+
+    const totalPage = Math.ceil(totalRecDB / articlePerPage);
+    let recordsDB = []
+      if (total) {
+        recordsDB = await DBarticles.db
+        .collection(articlesCollection)
+        .find(searchParams())
+        .sort(sortParams())
+        .limit(requestedPage * articlePerPage)
+        .toArray();
+      } else {
+      recordsDB = await DBarticles.db
+        .collection(articlesCollection)
+        .find(searchParams())
+        .sort(sortParams())
+        .skip((requestedPage - 1) * articlePerPage)
+        .limit(articlePerPage)
+        .toArray();
+      }
+        const articlesBrief = recordsDB.map(el => (
+          {_id: el._id,
+            title: el.title,
+            titleImage: el.titleImage,
+            summary: el.summary,
+            publicationDate: el.publicationDate,
+            likes: el.likes,
+            comments: el.comments
+            }
+        ))
+      return res.json({ articles: articlesBrief , page: requestedPage, totalPage: totalPage});
+    } catch (err) {
+      console.log('logBooksLine ', err);
+    }
+  }
+
+  async enterManor(req, res) {
+    try {
+      const userId = 'roman-kuleba'
+      return res.json({userId})
+
+    } catch (err) {
+      console.log('enterManor ', err);
+    }
+  
+  }
+
+  async getUserProfile(req, res) {
+    try {
+      const userId = req.params.id
+      console.log('user profile ', userId)
+
+      await DBarticles.connectToMongo();
+      const userProfile = await DBarticles.db
+      .collection('users_profiles')
+      .findOne({userId:userId})
+      
+      return res.json({userProfile})
+
+    } catch (err) {
+      console.log('getUserProfile ', err);
+    }
+  }
+
+  async updateUserProfile(req, res) {
+    try {
+      const {id, key, value } = req.body
+      console.log(id, key, value)
+
+      const obj_id = new ObjectId(id);
+      await DBarticles.connectToMongo();
+      const updateRec = await DBarticles.db
+      .collection('users_profiles')
+      .updateOne({_id: obj_id}, {$set:{[key]: value}})
+
+      return res.json(updateRec)
+    } catch (err) {
+      console.log('updateUserProfile ', err);
     }
   }
 }

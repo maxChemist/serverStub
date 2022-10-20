@@ -1,6 +1,7 @@
 const Router = require("express");
 const router = new Router();
 const userController = require("../controller/user.controller");
+const authMiddleware = require("../middleweare/authMiddleware")
 
 router.get('/',userController.get)
 router.get('/db',userController.db)
@@ -26,5 +27,12 @@ router.post('/sendArticle',userController.sendArticle)
 router.get('/getText',userController.getText)
 router.get('/getAdvertising',userController.getAdvertising)
 router.get('/subscribe/:aim',userController.subscribe)
+router.get('/logBooksLine/',userController.logBooksLine)
+router.get('/logBooksLine/:brand',userController.logBooksLine)
+router.get('/logBooksLine/:brand/:model',userController.logBooksLine)
+router.get('/logBooksLine/:brand/:model/:generation',userController.logBooksLine)
+router.get('/enterManor', userController.enterManor)
+router.get('/getUserProfile/:id', userController.getUserProfile)
+router.post('/updateUserProfile', authMiddleware, userController.updateUserProfile)
 
 module.exports = router;
